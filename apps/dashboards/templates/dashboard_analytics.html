@@ -1,0 +1,205 @@
+{% extends layout_path %} {% load static %} {% load i18n %} {% block title %} Dashboard - Analytics {% endblock title %}
+{% block vendor_css %} {{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+{% endblock vendor_css %} {% block vendor_js %} {{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+{% endblock vendor_js %} {% block page_js %} {{ block.super }}
+<script src="{% static 'js/dashboards-analytics.js' %}"></script>
+{% endblock page_js %} {% block content %}
+<div class="row gy-4">
+  <!-- Congratulations Card -->
+  <div class="col-md-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title mb-1">Congratulations! 🎉</h5>
+        <p>The Kenjek company reached</p>
+        <h3 class="text-primary">{{ total_customers }} customers</h3>
+        <p>Keep growing 🚀</p>
+        <div class="text-end mt-3">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customersModal">
+            View Customers
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Sales Card -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 text-center">
+      <div class="card-body">
+        <h5 class="card-title">Total Sales</h5>
+        <h3 class="text-success">${{ total_sales|floatformat:2 }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales by City Chart -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Top 5 Cities by Sales</h5>
+        <div id="salesByCityChart" style="height: 250px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 5 Employees Table -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Top 5 Employees</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped">
+            <thead>
+              <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Job Title</th>
+                <th>City</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for emp in employees %}
+              <tr>
+                <td>{{ emp.0 }}</td>
+                <td>{{ emp.1 }}</td>
+                <td>{{ emp.2 }}</td>
+                <td>{{ emp.3 }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center">No employees found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 5 Most Expensive Products Column Chart -->
+  <div class="col-12 mt-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Top 5 Most Expensive Products</h5>
+        <div id="topProductsColumnChart"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Customers Modal -->
+<div class="modal fade" id="customersModal" tabindex="-1" aria-labelledby="customersModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="customersModalLabel">Customer List</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Full Name</th>
+                <th>Job Title</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>Zip Code</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for customer in customers %}
+              <tr>
+                <td>{{ customer.Company }}</td>
+                <td>{{ customer.Full_Name }}</td>
+                <td>{{ customer.Job_Title }}</td>
+                <td>{{ customer.Address }}</td>
+                <td>{{ customer.City }}</td>
+                <td>{{ customer.Zip_Code }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center">No customers found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Sales by City chart
+    var cityLabels = {{ sales_labels|safe }};
+    var citySales = {{ sales_values|safe }};
+    var salesByCityOptions = {
+      chart: {
+        type: 'pie',
+        height: 250
+      },
+      series: citySales,
+      labels: cityLabels,
+      title: {
+        text: 'Top 5 Cities by Sales'
+      },
+      legend: {
+        position: 'bottom'
+      }
+    };
+    var salesByCityChart = new ApexCharts(document.querySelector("#salesByCityChart"), salesByCityOptions);
+    salesByCityChart.render();
+
+    // Top 5 Most Expensive Products Column Chart
+    var productNames = {{ product_names|safe }};
+    var productPrices = {{ product_prices|safe }};
+    var topProductsOptions = {
+      chart: {
+        type: 'bar',
+        height: 350
+      },
+      series: [{
+        name: 'List Price',
+        data: productPrices
+      }],
+      xaxis: {
+        categories: productNames,
+        title: {
+          text: 'Product Name'
+        }
+      },
+      yaxis: {
+        title: {
+          text: 'Price'
+        }
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: '50%',
+          endingShape: 'rounded'
+        }
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: function (val) {
+          return '$' + val.toFixed(2);
+        }
+      },
+      title: {
+        text: 'Top 5 Most Expensive Products',
+        align: 'center'
+      }
+    };
+    var topProductsChart = new ApexCharts(document.querySelector("#topProductsColumnChart"), topProductsOptions);
+    topProductsChart.render();
+  });
+</script>
+
+{% endblock %}
